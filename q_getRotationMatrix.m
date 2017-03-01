@@ -16,10 +16,3 @@ wx = w*x; wy = w*y; wz = w*z;
 rotationMatrix = [w2+x2-y2-z2 2*(xy - wz) 2*(wy + xz)
                   2*(wz + xy) w2-x2+y2-z2 2*(yz - wx)
                   2*(xz - wy) 2*(wx + yz) w2-x2-y2+z2];
-
-%test data              
-%quat = [0.7071 0.7071 0 0];
-%ans =    1.0000         0         0
-%         0   -0.0000   -1.0000
-%         0    1.0000   -0.0000
-              

@@ -13,7 +13,7 @@ classdef Model < handle
     methods
         %% read a model, output 3D points
         function self = readModel(self)
-            addpath('E:/matlabCode/Library/FileTime_29Jun2011');
+            addpath('D:/useAsE/matlabCode/Library/FileTime_29Jun2011');
             Path = self.ply_filename;
             cachepath = [self.ply_filename, '.cache'];
             if (exist(cachepath))
@@ -662,13 +662,44 @@ classdef Model < handle
             
             return
         end
+        %% output the boundingbox param
+        % boundingBox: 3x2 --- minx, maxx; miny, maxy; minz, maxz
+        function [boundingBox] = getParam(self)
+            rangex = [min(self.node_xyz(1, :)), max(model.node_xyz(1, :))];
+            rangey = [min(self.node_xyz(2, :)), max(model.node_xyz(2, :))];
+            rangez = [min(self.node_xyz(3, :)), max(model.node_xyz(3, :))];
+            boundingBox = [rangex; rangey; rangez];
+        end
         %% add bottom points
+% input:
+%   model: standard or reconstructed model after alignment, that is to say
+%   the axis of model is listed as follow:
+%       x: shortest
+%       y: longest
+%       z: height
+%       center: the center of bounding box
         function addBottom(self)
-            maxny = max(self.node_xyz(2, :));
-            node = [self.node_xyz(1, :); zeros(1, size(self.node_xyz, 2)) + maxny; self.node_xyz(3, :)];
-            self.node_xyz = [node, self.node_xyz];
-            self.node_rgb = [repmat([150, 100, 100]', 1, size(self.node_rgb, 2)), self.node_rgb];
-            self.normal = [repmat([0,1,0]', 1, size(self.normal, 2)), self.normal];
+            bBox = getParam(self);
+            delta = (bBox(:, 2) - bBox(:, 1)) ./ 50;
+            numOfNode = size(self.node_xyz, 2);
+            idx = convhull(self.node_xyz(1,:), self.node_xyz(2,:));
+            for x = bBox(1, 1):delta(1):bBox(1,2)
+                for y = bBox(2, 1):delta(2):bBox(2, 2)
+                    in = inpolygon(x, y, self.node_xyz(1, idx), self.node_xyz(2, idx));
+                    if (in == 1)
+                        numOfNode = numOfNode + 1;
+                        self.node_xyz(:,numOfNode) = [x, y, bBox(3,1)]';
+                    end
+                end
+            end
+            
+            %maxny = max(self.node_xyz(2, :));
+            %node = [self.node_xyz(1, :); zeros(1, size(self.node_xyz, 2)) + maxny; self.node_xyz(3, :)];
+            %self.node_xyz = [node, self.node_xyz];
+            %self.node_rgb = [repmat([150, 100, 100]', 1, size(self.node_rgb, 2)), self.node_rgb];
+            %self.normal = [repmat([0,1,0]', 1, size(self.normal, 2)), self.normal];
+            self.node_rgb = [self.node_rgb, repmat([150, 100, 100]', 1, size(self.node_xyz, 2) - size(self.node_rgb, 2))];
+            self.normal = [self.normal, repmat([0,1,0]', 1, size(self.node_xyz, 2) - size(self.normal, 2))];
         end
         %% show 3D model
         function show(self)
@@ -855,7 +886,7 @@ classdef Model < handle
         function writePly(self, output_filename)
             %normals = points2normals(self.node_xyz);
             
-            fin = fopen(output_filename, 'wt');
+            fin = fopen(output_filename, 'w');
             
             if size(self.normal, 1) ~= 0
             fprintf(fin, ['ply \n format ascii 1.0 \n element face 0 \n property list uchar int vertex_indices \n element vertex ' ...
@@ -891,55 +922,6 @@ classdef Model < handle
                 fprintf(fin, '%f %f %f\n',  self.node_xyz(1, i), self.node_xyz(2, i), self.node_xyz(3, i));
             end
             fclose(fin);
-        end
-        %% get neighbor
-        function value = getZneighbor(z, idx, dx, dy, edges)
-            while(dx > 0)
-                idx = edges{idx}(2);
-                dx = dx - 1;
-            end
-            while(dy > 0)
-                idx = edges{idx}(3);
-                dy = dy - 1;
-            end
-            while(dx < 0)
-                idx = edges{idx}(1);
-                dx = dx + 1;
-            end
-            while(dy < 0)
-                idx = edges{idx}(4);
-                dy = dy + 1;
-            end
-            value = z(:, idx);
-        end
-        %% curvature hint energy
-        function sum_energy = energy(z, z_model, edges)
-            S = 0;
-            for i = 1:size(pt2d, 2)
-                S = S + (getZneighbor(z, i, 1, 0, edges) -  2*getZneighbor(z, i, 0, 0, edges) + getZneighbor(z, i, -1, 0, edges))^2 +...
-                    (getZneighbor(z, i, -1, -1, edges) - getZneighbor(z, i, -1, 1, edges) - getZneighbor(z, i, 1, -1, edges) + getZneighbor(z, i, 1, 1, edges))^2/8 +...
-                    (getZneighbor(z, i, 1, 0, edges) - 2*getZneighbor(z, i, 0, 0, edges) + getZneighbor(z, i, -1, 0, edges) )^2;
-                C = (getZneighbor(z, i, 1, 0, edges) -  2*getZneighbor(z, i, 0, 0, edges) + getZneighbor(z, i, -1, 0, edges)) +...
-                    (getZneighbor(z, i, -1, -1, edges) - getZneighbor(z, i, -1, 1, edges) - getZneighbor(z, i, 1, -1, edges) + getZneighbor(z, i, 1, 1, edges))/2 +...
-                    (getZneighbor(z, i, 1, 0, edges) - 2*getZneighbor(z, i, 0, 0, edges) + getZneighbor(z, i, -1, 0, edges) );
-
-            end
-            R = sum(z - z_model).^2;
-                
-            sum_energy = S + R + C;
-        end
-        %%
-        %z mxn ?
-        function sum_grad = computeGrad(z)
-            S_grad = 25*getZneighbor(z, i, 1, 0, edges) + 3/2*(getZneighbor(z, i, 0, 2, edges) + getZneighbor(z, i, 0, -2, edges) + getZneighbor(z, i, 2, 0, edges) + getZneighbor(z, i, -2, 0, edges)) -...
-                8*(getZneighbor(z, i, 1, 0, edges) + getZneighbor(z, i, -1, 0, edges) + getZneighbor(z, i, 0, 1, edges) + getZneighbor(z, i, 0, -1, edges)) +...
-                (getZneighbor(z, i, 2, 2, edges) + getZneighbor(z, i, 2, -2, edges)+ getZneighbor(z, i, -2, -2, edges) + getZneighbor(z, i, -2, 2, edges))/4;
-            R_grad = 25*getZneighbor(z, i, 0, 0, edges) +...
-                3/2*(getZneighbor(z, i, 0, 2, edges) + getZneighbor(z, i, 0, -2, edges) + getZneighbor(z, i, 2, 0, edges) + getZneighbor(z, i, -2, 0, edges)) -...
-                8*(getZneighbor(z, i, 1, 0, edges) + getZneighbor(z, i, -1, 0, edges) + getZneighbor(z, i, 0, 1, edges) + getZneighbor(z, i, 0, -1, edges)) +...
-                (getZneighbor(z, i, 2, 2, edges) + getZneighbor(z, i, 2, -2, edges)+ getZneighbor(z, i, -2, -2, edges) + getZneighbor(z, i, -2, 2, edges))/4;
-            C_grad = 0;
-            sum_grad = 0;
         end
     end
     

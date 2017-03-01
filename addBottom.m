@@ -1,11 +1,11 @@
 %% addBottom test
 function addBottom() 
-    addpath(genpath('E:/matlabCode/Library/matlabmesh'));
-    addpath('E:/matlabCode/myLib');
-    addpath(genpath('E:/matlabCode/Library/gptoolbox-master'));
+    addpath(genpath('D:/useAsE/matlabCode/Library/matlabmesh'));
+    addpath('D:/useAsE/matlabCode/myLib');
+    addpath(genpath('D:/useAsE/matlabCode/Library/gptoolbox-master'));
 
     if 0
-    pathName = 'E:/testModel/';
+    pathName = 'D:/useAsE/testModel/';
     modelName = 'pmvs_onlyfoot.ply';
     
     model = Model([pathName modelName]);
@@ -17,7 +17,7 @@ function addBottom()
     end
     
     sceneName = 'tmp.ply';
-    modelName = 'E:/';
+    modelName = 'D:/useAsE/';
     
     scene = Model(sceneName);
     model = Model(modelName);

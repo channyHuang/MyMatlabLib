@@ -4,8 +4,8 @@
 % output£ºcontous in result dir
 function abstractFootCoutour(imgDir, maskDir)
 if nargin < 2
-    imgDir = 'E:/RealFootData/data_new/video3/picAll';
-    maskDir = 'E:/RealFootData/data_new/video3/maskAut';
+    imgDir = 'D:/useAsE/RealFootData/160119_QR_imu_vid_3/video1/pic';
+    maskDir = 'D:/useAsE/RealFootData/160119_QR_imu_vid_3/video1/maskAut';
 end
 
 imgfiles = dir([imgDir '/*.jpg']);
